@@ -1,0 +1,24 @@
+{
+  "originHash" : "053c22682b2ec961e32e6e79244bf5dd621508a483505ba2938cf74dded16e4f",
+  "pins" : [
+    {
+      "identity" : "lightweightchartsios",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/tradingview/LightweightChartsIOS",
+      "state" : {
+        "revision" : "5394d40fead4fbade89ee1c7e37aca4138b3186c",
+        "version" : "4.0.0"
+      }
+    },
+    {
+      "identity" : "snapkit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/SnapKit/SnapKit.git",
+      "state" : {
+        "revision" : "2842e6e84e82eb9a8dac0100ca90d9444b0307f4",
+        "version" : "5.7.1"
+      }
+    }
+  ],
+  "version" : 3
+}
