@@ -6,65 +6,81 @@
 //
 
 import SwiftUI
-import LightweightCharts
-import SnapKit
+import WebKit
 
 struct TradingChartView: UIViewRepresentable {
-
-    func makeUIView(context: Context) -> some UIView {
-        let chart = LightweightCharts()
-        chart.delegate = context.coordinator
-
-        setupChart(chart: chart)
-
-        return chart
+    func makeUIView(context: Context) -> WKWebView {
+        let webView = WKWebView()
+        webView.navigationDelegate = context.coordinator
+        loadHTML(in: webView)
+        fetchUpbitData(for: webView)
+        return webView
     }
 
-    func updateUIView(_ uiView: UIViewType, context: Context) {
-
-    }
+    func updateUIView(_ uiView: WKWebView, context: Context) {}
 
     func makeCoordinator() -> Coordinator {
         Coordinator(parent: self)
     }
 
-    private func setupChart(chart: LightweightCharts) {
-        let series: CandlestickSeries = chart.addCandlestickSeries(options: .none)
-
-        let data = [
-            CandlestickData(time: .string("2025-03-10 00:00:00"), open: 100.0, high: 120.0, low: 80.0, close: 92.0),
-            CandlestickData(time: .string("2025-03-11 00:01:00"), open: 120.0, high: 140.0, low: 90.0, close: 50.0),
-            CandlestickData(time: .string("2025-03-12 00:02:00"), open: 180.0, high: 120.0, low: 80.0, close: 92.0),
-            CandlestickData(time: .string("2025-03-13 00:03:00"), open: 100.0, high: 120.0, low: 80.0, close: 92.0),
-            CandlestickData(time: .string("2025-03-14 00:04:00"), open: 100.0, high: 120.0, low: 80.0, close: 92.0),
-            CandlestickData(time: .string("2025-03-15 00:05:00"), open: 100.0, high: 120.0, low: 80.0, close: 92.0),
-            CandlestickData(time: .string("2025-03-16 00:06:00"), open: 100.0, high: 120.0, low: 80.0, close: 92.0),
-            CandlestickData(time: .string("2025-03-17 00:07:00"), open: 100.0, high: 120.0, low: 80.0, close: 92.0),
-        ]
-
-        series.setData(data: data)
+    private func loadHTML(in webView: WKWebView) {
+        if let htmlPath = Bundle.main.path(forResource: "chart", ofType: "html") {
+            let htmlURL = URL(fileURLWithPath: htmlPath)
+            webView.loadFileURL(htmlURL, allowingReadAccessTo: htmlURL)
+        } else {
+            print("HTML file not found")
+        }
     }
 
+    private func fetchUpbitData(for webView: WKWebView) {
+        // Upbit API 호출 (예시)
+        let url = URL(string: "https://api.upbit.com/v1/candles/minutes/1?market=KRW-BTC&count=200")!
+        URLSession.shared.dataTask(with: url) { data, response, error in
+            guard let data = data, error == nil else {
+                print("Error fetching Upbit data: \(error?.localizedDescription ?? "Unknown error")")
+                return
+            }
+
+            do {
+                let json = try JSONSerialization.jsonObject(with: data, options: []) as? [[String: Any]]
+                let chartData = json?.map { item in
+                    return [
+                        "time": item["candle_date_time_utc"] as? String ?? "",
+                        "open": item["opening_price"] as? Double ?? 0.0,
+                        "high": item["high_price"] as? Double ?? 0.0,
+                        "low": item["low_price"] as? Double ?? 0.0,
+                        "close": item["trade_price"] as? Double ?? 0.0
+                    ]
+                } ?? []
+
+                // JavaScript로 데이터 전달
+                DispatchQueue.main.async {
+                    let jsonData = try! JSONSerialization.data(withJSONObject: chartData, options: [])
+                    let jsonString = String(data: jsonData, encoding: .utf8)!
+                    let script = "setChartData(\(jsonString))"
+                    webView.evaluateJavaScript(script) { result, error in
+                        if let error = error {
+                            print("Error evaluating JavaScript: \(error)")
+                        }
+                    }
+                }
+            } catch {
+                print("Error parsing Upbit data: \(error)")
+            }
+        }.resume()
+    }
 }
 
-
-final class Coordinator: ChartDelegate {
-
+final class Coordinator: NSObject, WKNavigationDelegate {
     var parent: TradingChartView
 
     init(parent: TradingChartView) {
         self.parent = parent
     }
 
-
-    func didClick(onChart chart: ChartApi, parameters: MouseEventParams) {
-        print(chart)
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        print("WebView finished loading")
     }
-    
-    func didCrosshairMove(onChart chart: ChartApi, parameters: MouseEventParams) {
-        print(chart)
-    }
-
 }
 
 #Preview {

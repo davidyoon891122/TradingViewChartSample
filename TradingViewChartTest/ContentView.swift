@@ -9,8 +9,24 @@ import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        TradingChartView()
-            .frame(height: 300.0)
+        VStack {
+            HStack {
+                Text("TradingView Chart")
+                Spacer()
+            }
+            .frame(height: 50.0)
+            WebView()
+
+            Button(action: {
+
+            }, label: {
+                Text("Button")
+                    .padding(.horizontal, 20.0)
+                    .padding(.vertical, 12.0)
+                    .frame(maxWidth: .infinity, minHeight: 56.0)
+                    .background(.cyan)
+            })
+        }
     }
 }
 

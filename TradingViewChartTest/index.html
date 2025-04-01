@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <title>TradingView Lightweight Chart with Upbit API</title>
+    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        #chart_container {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="chart_container"></div>
+    <script>
+        console.log("Script started");
+
+        // 차트 초기화
+        const chart = LightweightCharts.createChart(document.getElementById('chart_container'), {
+            width: window.innerWidth,
+            height: window.innerHeight,
+            layout: {
+                background: { type: 'solid', color: '#ffffff' },
+                textColor: '#333',
+            },
+            grid: {
+                vertLines: { color: '#e1e1e1' },
+                horzLines: { color: '#e1e1e1' },
+            },
+            timeScale: {
+                timeVisible: true,
+                secondsVisible: false,
+            }
+        });
+
+        const candlestickSeries = chart.addSeries(LightweightCharts.CandlestickSeries, {
+            upColor: '#26a69a',
+            downColor: '#ef5350',
+            borderVisible: false,
+            wickUpColor: '#26a69a',
+            wickDownColor: '#ef5350'
+        });
+
+        // Upbit API에서 데이터 가져오기
+        async function fetchUpbitData() {
+            try {
+                const response = await fetch('https://api.upbit.com/v1/candles/days?market=KRW-BTC&count=30');
+                const data = await response.json();
+
+                // Upbit 데이터를 Lightweight Charts 형식으로 변환
+                const chartData = data.map(candle => ({
+                    time: candle.candle_date_time_kst.split('T')[0], // YYYY-MM-DD 형식
+                    open: candle.opening_price,
+                    high: candle.high_price,
+                    low: candle.low_price,
+                    close: candle.trade_price
+                })).reverse(); // 최신 데이터가 뒤에 오도록 역순 정렬
+
+                // 차트에 데이터 적용
+                candlestickSeries.setData(chartData);
+                console.log("Upbit data loaded:", chartData);
+
+                // 차트가 데이터를 자동으로 맞추도록 설정
+                chart.timeScale().fitContent();
+            } catch (error) {
+                console.error("Error fetching Upbit data:", error);
+            }
+        }
+
+        // 데이터 가져오기 실행
+        fetchUpbitData();
+
+        // 창 크기 조정
+        window.addEventListener('resize', () => {
+            chart.resize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
